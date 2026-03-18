@@ -1,31 +1,32 @@
 export default async function handler(req, res) {
   try {
 
-    // قراءة البيانات من كل المصادر
-    const body = req.body || {};
-    const query = req.query || {};
+    const body = req.body;
 
-    console.log("🔥 BODY:", body);
-    console.log("🔥 QUERY:", query);
+    console.log("🔥 FULL DATA:", JSON.stringify(body, null, 2));
 
-    // استخراج الرابط
-    const link =
-      body.link ||
-      body?.meta?.link ||
-      body?.custom_fields?.link ||
-      query.link ||
-      query?.meta?.link;
+    // استخراج الرابط من items
+    let link = null;
+
+    if (body?.data?.items?.length > 0) {
+      const item = body.data.items[0];
+
+      // جرّب كل الاحتمالات
+      link =
+        item?.fields?.link ||
+        item?.custom_fields?.link ||
+        item?.options?.link ||
+        item?.name ||
+        null;
+    }
 
     console.log("🔗 LINK:", link);
 
-    const quantity = 1000;
-
     if (!link) {
-      console.log("❌ ما فيه رابط");
+      console.log("❌ ما حصلنا الرابط");
       return res.status(200).json({ message: "no link" });
     }
 
-    // إرسال الطلب
     const response = await fetch("https://drd3m.me/api/v2", {
       method: "POST",
       headers: {
@@ -36,17 +37,17 @@ export default async function handler(req, res) {
         action: "add",
         service: 9489,
         link: link,
-        quantity: quantity
+        quantity: 100
       })
     });
 
     const result = await response.json();
-    console.log("📦 RESPONSE:", result);
+    console.log("📦 RESULT:", result);
 
     res.status(200).json({ success: true });
 
-  } catch (error) {
-    console.error("❌ ERROR:", error);
-    res.status(500).json({ error: "error" });
+  } catch (err) {
+    console.error("❌ ERROR:", err);
+    res.status(500).json({ error: "fail" });
   }
 }
